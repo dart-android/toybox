@@ -1,0 +1,48 @@
+#!/bin/sh
+
+find apex
+find bin
+find data
+find etc
+find system_ext
+find linkerconfig
+
+find system/system_ext/apex/com.android.runtime
+find system/system_ext/apex/com.android.runtime/bin -type f | xargs -n 1 -- basename | xargs -n 1 -- find system/bin -mindepth 1 -maxdepth 1 -name
+find system/system_ext/apex/com.android.runtime/etc -type f | xargs -n 1 -- basename | xargs -n 1 -- find system/etc -mindepth 1 -maxdepth 1 -name
+for LIB in lib64 lib; do
+  find system/system_ext/apex/com.android.runtime/${LIB} \( -type f -o  -type l \) | xargs -n 1 -- basename | xargs -n 1 -- find system/${LIB} -mindepth 1 -maxdepth 1 -name
+done
+
+xargs -n 1 -- find system/bin -mindepth 1 -maxdepth 1 -name <<'EOF'
+awk
+bc
+bunzip2
+bzcat
+bzip2
+dnsmasq
+ip
+ldd
+sh
+toybox
+EOF
+for LIB in lib64 lib; do
+  xargs -n 1 -- find system/${LIB} -mindepth 1 -maxdepth 1 -name <<'EOF'
+    libbase.so
+    libcgrouprc.so
+    libcrypto.so
+    libcutils.so
+    libiprouteutil.so
+    libnetlink.so
+    liblog.so
+    libpackagelistparser.so
+    libpcre2.so
+    libprocessgroup.so
+    libselinux.so
+    libz.so
+EOF
+done
+
+find system/etc/mkshrc
+find system/etc/security/cacerts
+find system/usr/share/zoneinfo/tzdata
