@@ -23,9 +23,9 @@ jobs:
       matrix:
         include:
           - type: aosp_aarch64
-            link: https://dl.google.com/developers/android/tm/images/gsi/aosp_arm64-exp-TP1A.220624.014-8819323-996da050.zip
+            link: https://dl.google.com/developers/android/udc/images/gsi/aosp_arm64-exp-UP1A.231005.007-10754064-68dd726a.zip
           - type: aosp_x86_64
-            link: https://dl.google.com/developers/android/tm/images/gsi/aosp_x86_64-exp-TP1A.220624.014-8819323-045fbd68.zip
+            link: https://dl.google.com/developers/android/udc/images/gsi/aosp_x86_64-exp-UP1A.231005.007-10754064-84570261.zip
 
     steps:
       - name: Checkout
