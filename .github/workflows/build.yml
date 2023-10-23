@@ -31,12 +31,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Archive
+      - name: Download GSI
         run: |
           curl -fsSLo ${{ matrix.type }}.zip ${{ matrix.link }}
+
+      - name: Mount GSI
+        run: |
           unzip ${{ matrix.type }}.zip
           mkdir sysroot
           sudo mount -o loop,ro system.img sysroot
+
+      - name: List GSI Contents
+        run: |
+          cd sysroot
+          find . -print0 | xargs -0 ls -dl
+
+      - name: Archive
+        run: |
           cd sysroot
           sudo ../libexec/ls-files | sudo tar -cvzf ../${{ matrix.type }}.tar.gz -T-
 
