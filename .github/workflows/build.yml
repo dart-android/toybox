@@ -44,7 +44,7 @@ jobs:
       - name: List GSI Contents
         run: |
           cd sysroot
-          find . -print0 | xargs -0 ls -dl
+          sudo find . -print0 | xargs -0 sudo ls -dl
 
       - name: Archive
         run: |
