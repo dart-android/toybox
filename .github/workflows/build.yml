@@ -57,6 +57,7 @@ jobs:
           name: ${{ matrix.type }}
           path: ${{ matrix.type }}.tar.gz
           if-no-files-found: error
+          compression-level: 0
 
   build:
     needs: [archive]
