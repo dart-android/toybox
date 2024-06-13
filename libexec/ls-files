@@ -4,17 +4,20 @@ find apex
 find bin
 find data
 find etc
-find system_ext
 find linkerconfig
+find system_ext -maxdepth 0
+find system/system_ext -maxdepth 0
 
-find system/system_ext/apex/com.android.runtime
-find system/system_ext/apex/com.android.runtime/bin -type f | xargs -n 1 -- basename | xargs -n 1 -- find system/bin -mindepth 1 -maxdepth 1 -name
-find system/system_ext/apex/com.android.runtime/etc -type f | xargs -n 1 -- basename | xargs -n 1 -- find system/etc -mindepth 1 -maxdepth 1 -name
-for LIB in lib64 lib; do
-  find system/system_ext/apex/com.android.runtime/${LIB} \( -type f -o  -type l \) | xargs -n 1 -- basename | xargs -n 1 -- find system/${LIB} -mindepth 1 -maxdepth 1 -name
+for SYSTEM_EXT in system_ext system/system_ext; do
+  find ${SYSTEM_EXT}/apex/com.android.runtime -not -name lost+found
+  find ${SYSTEM_EXT}/apex/com.android.runtime/bin -type f | xargs -r -n 1 -- basename | xargs -r -n 1 -- find system/bin -mindepth 1 -maxdepth 1 -name
+  find ${SYSTEM_EXT}/apex/com.android.runtime/etc -type f | xargs -r -n 1 -- basename | xargs -r -n 1 -- find system/etc -mindepth 1 -maxdepth 1 -name
+  for LIB in lib64 lib; do
+    find ${SYSTEM_EXT}/apex/com.android.runtime/${LIB} \( -type f -o  -type l \) | xargs -r -n 1 -- basename | xargs -r -n 1 -- find system/${LIB} -mindepth 1 -maxdepth 1 -name
+  done
 done
 
-xargs -n 1 -- find system/bin -mindepth 1 -maxdepth 1 -name <<'EOF'
+xargs -r -n 1 -- find system/bin -mindepth 1 -maxdepth 1 -name <<'EOF'
 awk
 bc
 bunzip2
@@ -27,7 +30,7 @@ sh
 toybox
 EOF
 for LIB in lib64 lib; do
-  xargs -n 1 -- find system/${LIB} -mindepth 1 -maxdepth 1 -name <<'EOF'
+  xargs -r -n 1 -- find system/${LIB} -mindepth 1 -maxdepth 1 -name <<'EOF'
     libbase.so
     libcgrouprc.so
     libcrypto.so

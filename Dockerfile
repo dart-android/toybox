@@ -1,10 +1,9 @@
 FROM docker.io/library/alpine AS builder
 
-COPY aosp_aarch64.tar.gz /build/aosp_aarch64.tar.gz
-COPY aosp_x86_64.tar.gz /build/aosp_x86_64.tar.gz
+COPY build/ /build/
 
 RUN mkdir /sysroot \
- && tar -xf /build/aosp_$(uname -m).tar.gz -C /sysroot \
+ && tar -xf /build/$(uname -m).tar.gz -C /sysroot \
  && ln -s /system/system_ext/apex/com.android.runtime /sysroot/apex/com.android.runtime \
  && touch /sysroot/linkerconfig/ld.config.txt
 

@@ -22,40 +22,40 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - type: aosp_aarch64
-            link: https://dl.google.com/developers/android/udc/images/gsi/aosp_arm64-exp-UP1A.231005.007-10754064-68dd726a.zip
-          - type: aosp_x86_64
-            link: https://dl.google.com/developers/android/udc/images/gsi/aosp_x86_64-exp-UP1A.231005.007-10754064-84570261.zip
+          - arch: aarch64
+            gsi: https://dl.google.com/developers/android/udc/images/gsi/aosp_arm64-exp-UP1A.231005.007-10754064-68dd726a.zip
+          - arch: x86_64
+            gsi: https://dl.google.com/developers/android/udc/images/gsi/aosp_x86_64-exp-UP1A.231005.007-10754064-84570261.zip
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download GSI
+      - name: Download Image
         run: |
-          curl -fsSLo ${{ matrix.type }}.zip ${{ matrix.link }}
+          curl -fsSLo img.zip ${{ matrix.gsi }}
+          unzip img.zip
 
-      - name: Mount GSI
+      - name: Mount system.img
         run: |
-          unzip ${{ matrix.type }}.zip
-          mkdir sysroot
-          sudo mount -o loop,ro system.img sysroot
+          mkdir SYSTEM
+          sudo mount -o loop,ro system.img SYSTEM
 
-      - name: List GSI Contents
+      - name: List Contents
         run: |
-          cd sysroot
-          sudo find . -print0 | xargs -0 sudo ls -dl
+          cd SYSTEM
+          sudo find . -ls
 
       - name: Archive
         run: |
-          cd sysroot
-          sudo ../libexec/ls-files | sudo tar -cvzf ../${{ matrix.type }}.tar.gz -T-
+          cd SYSTEM
+          sudo ../libexec/ls-files | sudo tar -cvzf ../${{ matrix.arch }}.tar.gz --no-recursion -T-
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.type }}
-          path: ${{ matrix.type }}.tar.gz
+          name: build-${{ matrix.arch }}
+          path: ${{ matrix.arch }}.tar.gz
           if-no-files-found: error
           compression-level: 0
 
@@ -73,13 +73,12 @@ jobs:
 
       - name: Download Artifact
         uses: actions/download-artifact@v4
-        with:
-          name: aosp_aarch64
 
-      - name: Download Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: aosp_x86_64
+      - name: Prepare
+        id: prepare
+        run: |
+          mkdir build
+          mv build-*/* build
 
       - name: Docker Metadata
         id: docker-metadata
@@ -96,6 +95,8 @@ jobs:
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+        with:
+          image: tonistiigi/binfmt:master # need qemu >=8.2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
