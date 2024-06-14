@@ -4,7 +4,7 @@ COPY build/ /build/
 
 RUN mkdir /sysroot \
  && tar -xf /build/$(uname -m).tar.gz -C /sysroot \
- && ln -s /system/system_ext/apex/com.android.runtime /sysroot/apex/com.android.runtime \
+ && ln -s /system_ext/apex/com.android.runtime /sysroot/apex/com.android.runtime \
  && touch /sysroot/linkerconfig/ld.config.txt
 
 FROM scratch AS toybox
