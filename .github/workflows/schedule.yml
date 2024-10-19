@@ -72,9 +72,14 @@ jobs:
             type=schedule
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          image: tonistiigi/binfmt:master
+        run: |
+          docker run --privileged --rm -i registry.fedoraproject.org/fedora-minimal <<'EOF'
+          set -e
+          microdnf install --assumeyes --nodocs --setopt=install_weak_deps=False qemu-user-static systemd-udev
+          mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc
+          /usr/lib/systemd/systemd-binfmt --unregister
+          /usr/lib/systemd/systemd-binfmt
+          EOF
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -90,7 +95,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64 # ,linux/riscv64
+          platforms: linux/amd64,linux/arm64,linux/riscv64
           push: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
           tags: ${{ steps.docker-metadata.outputs.tags }}
           labels: ${{ steps.docker-metadata.outputs.labels }}
