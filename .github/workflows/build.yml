@@ -3,45 +3,37 @@ name: build
 on:
   workflow_call:
     inputs:
-      target:
-        description: The target device configuration
+      ref:
+        description: The ref
+        required: false
+        type: string
+      artifacts:
+        description: The artifacts
         required: true
-        type: string
-      image:
-        description: The image url
-        required: false
-        type: string
-  workflow_dispatch:
-    inputs:
-      target:
-        type: choice
-        description: The target device configuration
-        options:
-        - aosp_arm64
-        - aosp_x86_64
-        - aosp_cf_riscv64_phone
-      image:
-        description: The image url
-        required: false
         type: string
 
 jobs:
   archive:
     runs-on: ubuntu-24.04
 
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.artifacts) }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        if: contains(inputs.target, '_cf_')
+        if: contains(matrix.target, '_cf_')
         run: |
           sudo apt-get update
           sudo apt-get install -y "linux-modules-extra-$(uname -r)" erofs-utils erofsfuse
           sudo modprobe erofs
 
       - name: Install cuttlefish
-        if: contains(inputs.target, '_cf_')
+        if: contains(matrix.target, '_cf_')
         run: |
           ID=$(curl -fsSL https://ci.android.com/builds/branches/aosp-main/status.json | yq '.targets[] | select(.name == "aosp_cf_x86_64_phone-trunk_staging-userdebug") | .last_known_good_build')
           ARTIFACT_URL=$(node <<EOF
@@ -54,17 +46,17 @@ jobs:
           echo /opt/android-cuttlefish/bin | tee -a "$GITHUB_PATH"
 
       - name: Download Image
-        if: inputs.image != ''
+        if: matrix.image != ''
         run: |
-          curl -fsSLo img.zip ${{ inputs.image }}
+          curl -fsSLo img.zip ${{ matrix.image }}
           unzip img.zip
 
       - name: Download Image
-        if: inputs.image == ''
+        if: matrix.image == ''
         run: |
-          ID=$(curl -fsSL https://ci.android.com/builds/branches/aosp-main/status.json | yq '.targets[] | select(.name == "${{ inputs.target }}-trunk_staging-userdebug") | .last_known_good_build')
+          ID=$(curl -fsSL https://ci.android.com/builds/branches/aosp-main/status.json | yq '.targets[] | select(.name == "${{ matrix.target }}-trunk_staging-userdebug") | .last_known_good_build')
           ARTIFACT_URL=$(node <<EOF
-          $(curl -fsSL "https://ci.android.com/builds/submitted/$ID/${{ inputs.target }}-trunk_staging-userdebug/latest/${{ inputs.target }}-img-$ID.zip" | grep 'var JSVariables = ')
+          $(curl -fsSL "https://ci.android.com/builds/submitted/$ID/${{ matrix.target }}-trunk_staging-userdebug/latest/${{ matrix.target }}-img-$ID.zip" | grep 'var JSVariables = ')
           console.log(JSVariables['artifactUrl'])
           EOF
           )
@@ -109,12 +101,100 @@ jobs:
       - name: Archive
         run: |
           cd SYSTEM
-          sudo ../libexec/ls-files | sudo tar -cvzf ../${{ inputs.target }}.tar.gz --no-recursion -T-
+          sudo ../libexec/ls-files | sudo tar -cvzf ../${{ matrix.target }}.tar.gz --no-recursion -T-
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ inputs.target }}
-          path: ${{ inputs.target }}.tar.gz
+          name: build-${{ inputs.ref || 'main' }}-${{ matrix.target }}
+          path: ${{ matrix.target }}.tar.gz
           if-no-files-found: error
           compression-level: 0
+
+  build:
+    needs: [archive]
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-${{ inputs.ref || 'main' }}-*
+
+      - name: Prepare
+        id: prepare
+        run: |
+          mkdir build
+          find . \( -name 'aosp_arm64.tar.gz' -o -name 'aosp_cf_arm64_phone.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/aarch64.tar.gz
+          find . \( -name 'aosp_x86_64.tar.gz' -o -name 'aosp_cf_x86_64_phone.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/x86_64.tar.gz
+          find . \( -name 'aosp_riscv64.tar.gz' -o -name 'aosp_cf_riscv64_phone.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/riscv64.tar.gz
+          echo "platforms=$(find build -mindepth 1 -maxdepth 1 -print0 | xargs -0 -I {} basename {} .tar.gz | sed -e 's,aarch64,linux/arm64,;s,x86_64,linux/amd64,;s,riscv64,linux/riscv64,' | paste -s -d , -)" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Docker Metadata
+        id: docker-metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}
+          tags: |
+            type=edge
+            type=ref,event=branch
+            type=ref,event=pr
+            type=ref,event=tag
+            type=schedule
+
+      - name: Set up QEMU
+        run: docker run --privileged --rm registry.fedoraproject.org/fedora-minimal /bin/sh -c "microdnf install --assumeyes --nodocs --setopt=install_weak_deps=False qemu-user-static systemd-udev && mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc && /usr/lib/systemd/systemd-binfmt --unregister && /usr/lib/systemd/systemd-binfmt"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ steps.prepare.outputs.platforms }}
+          push: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && inputs.ref == '' || startsWith(github.ref, 'refs/tags/') }}
+          tags: ${{ steps.docker-metadata.outputs.tags }}
+          labels: ${{ steps.docker-metadata.outputs.labels }}
+
+  tag:
+    needs: [build]
+
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && inputs.ref != ''
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Tag
+        run: |
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git config user.name github-actions[bot]
+          if test -n "$(git tag -l ${{ inputs.ref }})"; then
+            echo "Tag ${{ inputs.ref }} has already been created."
+            exit 0
+          fi
+          git tag -m ${{ inputs.ref }} ${{ inputs.ref }}
+          echo "Tagged ${{ inputs.ref }}."
+          git push origin refs/tags/${{ inputs.ref }}
+          echo "Pushed tag ${{ inputs.ref }}."
