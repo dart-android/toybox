@@ -90,7 +90,11 @@ jobs:
 
             sudo mount -t tmpfs tmpfs $SYSTEM_EXT
             mkdir -p $SYSTEM_EXT/apex/com.android.runtime
-            sudo mount -o loop,ro apex_payload.img $SYSTEM_EXT/apex/com.android.runtime
+            if [ "$(blkid -o value -s TYPE apex_payload.img)" = "erofs" ]; then
+              sudo erofsfuse -o allow_other apex_payload.img $SYSTEM_EXT/apex/com.android.runtime
+            else
+              sudo mount -o loop,ro apex_payload.img $SYSTEM_EXT/apex/com.android.runtime
+            fi
           fi
 
       - name: List Contents
