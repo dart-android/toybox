@@ -55,7 +55,7 @@ jobs:
 
   main:
     needs: [metadata]
-    if: github.ref_type == 'branch'
+    if: "false"
     permissions:
       packages: write
     uses: ./.github/workflows/build.yml
