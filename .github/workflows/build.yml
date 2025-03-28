@@ -35,9 +35,9 @@ jobs:
       - name: Install cuttlefish
         if: contains(matrix.target, '_cf_')
         run: |
-          ID=$(curl -fsSL https://ci.android.com/builds/branches/aosp-main/status.json | yq '.targets[] | select(.name == "aosp_cf_x86_64_phone-trunk_staging-userdebug") | .last_known_good_build')
+          ID=$(curl -fsSL https://ci.android.com/builds/branches/aosp-android-latest-release/status.json | yq '.targets[] | select(.name == "aosp_cf_x86_64_only_phone-userdebug") | .last_known_good_build')
           ARTIFACT_URL=$(node <<EOF
-          $(curl -fsSL "https://ci.android.com/builds/submitted/$ID/aosp_cf_x86_64_phone-trunk_staging-userdebug/latest/cvd-host_package.tar.gz" | grep 'var JSVariables = ')
+          $(curl -fsSL "https://ci.android.com/builds/submitted/$ID/aosp_cf_x86_64_only_phone-userdebug/latest/cvd-host_package.tar.gz" | grep 'var JSVariables = ')
           console.log(JSVariables['artifactUrl'])
           EOF
           )
