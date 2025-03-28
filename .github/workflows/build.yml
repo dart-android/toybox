@@ -153,6 +153,7 @@ jobs:
             ghcr.io/${{ github.repository }}
           tags: |
             type=edge
+            type=raw,value=latest,enable=false
             type=ref,event=branch
             type=ref,event=pr
             type=ref,event=tag
