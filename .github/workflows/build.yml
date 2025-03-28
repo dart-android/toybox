@@ -3,6 +3,10 @@ name: build
 on:
   workflow_call:
     inputs:
+      build-id:
+        description: The build-id
+        required: false
+        type: string
       ref:
         description: The ref
         required: false
