@@ -54,9 +54,9 @@ jobs:
       - name: Download Image
         if: matrix.image == ''
         run: |
-          ID=$(curl -fsSL https://ci.android.com/builds/branches/aosp-main/status.json | yq '.targets[] | select(.name == "${{ matrix.target }}-trunk_staging-userdebug") | .last_known_good_build')
+          ID=$(curl -fsSL https://ci.android.com/builds/branches/aosp-android-latest-release/status.json | yq '.targets[] | select(.name == "${{ matrix.target }}-userdebug") | .last_known_good_build')
           ARTIFACT_URL=$(node <<EOF
-          $(curl -fsSL "https://ci.android.com/builds/submitted/$ID/${{ matrix.target }}-trunk_staging-userdebug/latest/${{ matrix.target }}-img-$ID.zip" | grep 'var JSVariables = ')
+          $(curl -fsSL "https://ci.android.com/builds/submitted/$ID/${{ matrix.target }}-userdebug/latest/${{ matrix.target }}-img-$ID.zip" | grep 'var JSVariables = ')
           console.log(JSVariables['artifactUrl'])
           EOF
           )
@@ -136,9 +136,9 @@ jobs:
         id: prepare
         run: |
           mkdir build
-          find . \( -name 'aosp_arm64.tar.gz' -o -name 'aosp_cf_arm64_phone.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/aarch64.tar.gz
-          find . \( -name 'aosp_x86_64.tar.gz' -o -name 'aosp_cf_x86_64_phone.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/x86_64.tar.gz
-          find . \( -name 'aosp_riscv64.tar.gz' -o -name 'aosp_cf_riscv64_phone.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/riscv64.tar.gz
+          find . \( -name 'aosp_arm64.tar.gz' -o -name 'aosp_cf_arm64*.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/aarch64.tar.gz
+          find . \( -name 'aosp_x86_64.tar.gz' -o -name 'aosp_cf_x86_64*.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/x86_64.tar.gz
+          find . \( -name 'aosp_riscv64.tar.gz' -o -name 'aosp_cf_riscv64*.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/riscv64.tar.gz
           echo "platforms=$(find build -mindepth 1 -maxdepth 1 -print0 | xargs -0 -I {} basename {} .tar.gz | sed -e 's,aarch64,linux/arm64,;s,x86_64,linux/amd64,;s,riscv64,linux/riscv64,' | paste -s -d , -)" | tee -a "$GITHUB_OUTPUT"
 
       - name: Docker Metadata
