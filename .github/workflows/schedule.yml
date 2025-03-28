@@ -18,52 +18,47 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  metadata:
+  latest:
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [aosp-android-gsi, aosp-android-latest-release]
+
     outputs:
-      releases: ${{ steps.releases.outputs.releases }}
+      aosp-android-gsi-builds: ${{ steps.builds.outputs.aosp-android-gsi-builds }}
+      aosp-android-latest-release-builds: ${{ steps.builds.outputs.aosp-android-latest-release-builds }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup node
-        uses: actions/setup-node@v4
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Get Generic System Image releases
-        id: releases
+      - name: Get ${{ matrix.branch }}
+        id: builds
         run: |
-          if ${{ github.ref_type == 'tag' && 'true' || 'false' }}; then
-            echo "releases=$(node index.mjs ${{ github.ref_name }})" | tee -a "$GITHUB_OUTPUT"
+          if ${{ github.ref_type == 'tag' }}; then
+            echo "${{ matrix.branch }}-builds=$(libexec/${{ matrix.branch }} | yq 'filter(.buildId == "${{ github.ref_name }}")')" | tee -a "$GITHUB_OUTPUT"
           else
-            echo "releases=$(node index.mjs)" | tee -a "$GITHUB_OUTPUT"
+            echo "${{ matrix.branch }}-builds=$(libexec/${{ matrix.branch }})" | tee -a "$GITHUB_OUTPUT"
           fi
 
-  release:
-    needs: [metadata]
+  aosp-android-gsi:
+    needs: [latest]
+    if: needs.latest.outputs.aosp-android-gsi-builds != '[]'
     permissions:
       packages: write
     uses: ./.github/workflows/build.yml
     with:
-      ref: ${{ fromJSON(needs.metadata.outputs.releases)[0].build }}
-      artifacts: ${{ toJSON(fromJSON(needs.metadata.outputs.releases)[0].artifacts) }}
+      builds: ${{ needs.latest.outputs.aosp-android-gsi-builds }}
     secrets: inherit
 
-  main:
-    needs: [metadata]
-    if: github.ref_type == 'branch'
+  aosp-android-latest-release:
+    needs: [latest]
+    if: needs.latest.outputs.aosp-android-latest-release-builds != '[]'
     permissions:
       packages: write
     uses: ./.github/workflows/build.yml
     with:
-      artifacts: |
-        [
-          { "target": "aosp_cf_arm64_only_phone" },
-          { "target": "aosp_cf_riscv64_phone" },
-          { "target": "aosp_cf_x86_64_only_phone" }
-        ]
+      builds: ${{ needs.latest.outputs.aosp-android-latest-release-builds }}
     secrets: inherit

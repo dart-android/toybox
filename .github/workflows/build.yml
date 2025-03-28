@@ -3,27 +3,40 @@ name: build
 on:
   workflow_call:
     inputs:
-      build-id:
-        description: The build-id
-        required: false
-        type: string
-      ref:
-        description: The ref
-        required: false
-        type: string
-      artifacts:
+      builds:
         description: The artifacts
         required: true
         type: string
 
 jobs:
+  pre-archive:
+    runs-on: ubuntu-latest
+
+    outputs:
+      artifacts: ${{ steps.artifacts.outputs.artifacts }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare Archive Matrix
+        id: artifacts
+        env:
+          BUILDS: ${{ inputs.builds }}
+        run: |
+          node <<'EOF' | tee -a "$GITHUB_OUTPUT"
+          console.log(`artifacts=${JSON.stringify(JSON.parse(process.env.BUILDS).flatMap(build => build.artifacts))}`)
+          EOF
+
   archive:
+    needs: [pre-archive]
+
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.artifacts) }}
+        include: ${{ fromJSON(needs.pre-archive.outputs.artifacts) }}
 
     steps:
       - name: Checkout
@@ -39,33 +52,14 @@ jobs:
       - name: Install cuttlefish
         if: contains(matrix.target, '_cf_')
         run: |
-          ID=$(curl -fsSL https://ci.android.com/builds/branches/aosp-android-latest-release/status.json | yq '.targets[] | select(.name == "aosp_cf_x86_64_only_phone-userdebug") | .last_known_good_build')
-          ARTIFACT_URL=$(node <<EOF
-          $(curl -fsSL "https://ci.android.com/builds/submitted/$ID/aosp_cf_x86_64_only_phone-userdebug/latest/cvd-host_package.tar.gz" | grep 'var JSVariables = ')
-          console.log(JSVariables['artifactUrl'])
-          EOF
-          )
           sudo mkdir /opt/android-cuttlefish
-          curl -fsSL "$ARTIFACT_URL" | sudo tar -xzC /opt/android-cuttlefish
+          curl -fsSL "$(libexec/cvd-host_package)" | sudo tar -xzC /opt/android-cuttlefish
           echo /opt/android-cuttlefish/bin | tee -a "$GITHUB_PATH"
 
       - name: Download Image
-        if: matrix.image != ''
         run: |
-          curl -fsSLo img.zip ${{ matrix.image }}
-          unzip img.zip
-
-      - name: Download Image
-        if: matrix.image == ''
-        run: |
-          ID=$(curl -fsSL https://ci.android.com/builds/branches/aosp-android-latest-release/status.json | yq '.targets[] | select(.name == "${{ matrix.target }}-userdebug") | .last_known_good_build')
-          ARTIFACT_URL=$(node <<EOF
-          $(curl -fsSL "https://ci.android.com/builds/submitted/$ID/${{ matrix.target }}-userdebug/latest/${{ matrix.target }}-img-$ID.zip" | grep 'var JSVariables = ')
-          console.log(JSVariables['artifactUrl'])
-          EOF
-          )
-          curl -fsSLo img.zip "$ARTIFACT_URL"
-          unzip img.zip
+          curl -fsSLo ${{ matrix.artifact }} "${{ matrix.artifactUrl }}"
+          unzip ${{ matrix.artifact }}
 
       - name: Mount system.img
         run: |
@@ -114,10 +108,11 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ inputs.ref || 'main' }}-${{ matrix.target }}
+          name: build-${{ matrix.target }}-${{ matrix.buildId }}
           path: ${{ matrix.target }}.tar.gz
           if-no-files-found: error
           compression-level: 0
+
 
   build:
     needs: [archive]
@@ -127,6 +122,11 @@ jobs:
     permissions:
       packages: write
 
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.builds) }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -134,7 +134,7 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
-          pattern: build-${{ inputs.ref || 'main' }}-*
+          pattern: build-*-${{ matrix.buildId }}
 
       - name: Prepare
         id: prepare
@@ -176,16 +176,21 @@ jobs:
         with:
           context: .
           platforms: ${{ steps.prepare.outputs.platforms }}
-          push: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && inputs.ref == '' || github.ref_type == 'tag' }}
+          push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.docker-metadata.outputs.tags }}
           labels: ${{ steps.docker-metadata.outputs.labels }}
 
   tag:
     needs: [build]
 
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && inputs.ref != ''
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
 
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.builds) }}
 
     steps:
       - name: Checkout
@@ -198,11 +203,11 @@ jobs:
         run: |
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git config user.name github-actions[bot]
-          if test -n "$(git tag -l ${{ inputs.ref }})"; then
-            echo "Tag ${{ inputs.ref }} has already been created."
+          if test -n "$(git tag -l ${{ matrix.buildId }})"; then
+            echo "Tag ${{ matrix.buildId }} has already been created."
             exit 0
           fi
-          git tag -m ${{ inputs.ref }} ${{ inputs.ref }}
-          echo "Tagged ${{ inputs.ref }}."
-          git push origin refs/tags/${{ inputs.ref }}
-          echo "Pushed tag ${{ inputs.ref }}."
+          git tag -m ${{ matrix.buildId }} ${{ matrix.buildId }}
+          echo "Tagged ${{ matrix.buildId }}."
+          git push origin refs/tags/${{ matrix.buildId }}
+          echo "Pushed tag ${{ matrix.buildId }}."

@@ -1,0 +1,7 @@
+#!/usr/bin/env node
+
+import {getBuilds} from '../lib/com.android.ci.js'
+
+const builds = await getBuilds('aosp-android-latest-release')
+
+console.log(JSON.stringify(builds, null, process.stdout.isTTY ? 2 : 0))
