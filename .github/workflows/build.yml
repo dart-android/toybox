@@ -4,9 +4,13 @@ on:
   workflow_call:
     inputs:
       builds:
-        description: The artifacts
+        description: The builds matrix
         required: true
         type: string
+      latest:
+        description: Whether to update latest tag
+        required: false
+        type: boolean
 
 jobs:
   pre-archive:
@@ -153,7 +157,7 @@ jobs:
             ghcr.io/${{ github.repository }}
           tags: |
             type=edge
-            type=raw,value=latest,enable=false
+            type=raw,value=latest,enable=${{ inputs.latest }}
             type=ref,event=branch
             type=ref,event=pr
             type=ref,event=tag
