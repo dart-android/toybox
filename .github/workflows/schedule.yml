@@ -61,4 +61,5 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       builds: ${{ needs.latest.outputs.aosp-android-latest-release-builds }}
+      latest: true
     secrets: inherit
