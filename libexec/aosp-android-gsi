@@ -11,7 +11,7 @@ const urls = source.split('\n')
   .map(href => new URL(href))
 
 const releases = urls.reduce((accumulator, url) => {
-  const match = /(?:\/)(?<target>aosp_.*?)-exp-(?<buildId>.*?)-(?:.*?)?\.zip$/.exec(url.pathname)
+  const match = /(?:\/)(?<target>aosp_.*?)-exp-(?<buildId>.*?)-.*?\.zip$/.exec(url.pathname)
   if (match === null) {
     throw new Error(`URL does not match pattern: ${url.href}`)
   }
