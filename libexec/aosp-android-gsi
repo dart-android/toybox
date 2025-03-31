@@ -11,7 +11,8 @@ const urls = source.split('\n')
   .map(href => new URL(href))
 
 const releases = urls.reduce((accumulator, url) => {
-  const match = /(?:\/)(?<target>aosp_.*?)-exp-(?<buildId>.*?)-.*?\.zip$/.exec(url.pathname)
+  const basename = path.basename(url.pathname)
+  const match = /^(?<target>aosp_.*?)-exp-(?<buildId>.*?)-.*?\.zip$/.exec(basename)
   if (match === null) {
     throw new Error(`URL does not match pattern: ${url.href}`)
   }
@@ -23,7 +24,7 @@ const releases = urls.reduce((accumulator, url) => {
     accumulator.push(release)
   }
   release.artifacts.push({
-    artifact: path.basename(url.pathname),
+    artifact: basename,
     artifactUrl: url.href,
     buildId,
     target
