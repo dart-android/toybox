@@ -1,35 +1,11 @@
 #!/usr/bin/env node
 
-import path from 'node:path'
+import {getReleases} from '../lib/dl.google.com.js'
 
-const source = await (await fetch('https://developer.android.com/topic/generic-system-image/releases')).text()
-
-const urls = source.split('\n')
-  .filter(line => line.includes('https://dl.google.com/'))
-  .map(line => line.match(/https:\/\/dl\.google\.com\/developers\/android\/[^\/]+?\/images\/gsi\/aosp_[^-]+?-exp-[^-]+?-[^-]+?-[^-]+?\.zip/))
-  .filter(href => href !== null)
-  .map(href => new URL(href))
-
-const releases = urls.reduce((accumulator, url) => {
-  const basename = path.basename(url.pathname)
-  const match = /^(?<target>aosp_.*?)-exp-(?<buildId>.*?)-.*?\.zip$/.exec(basename)
-  if (match === null) {
-    throw new Error(`URL does not match pattern: ${url.href}`)
-  }
-
-  const { target, buildId } = match.groups
-  let release = accumulator.find(release => release.buildId === buildId)
-  if (release === undefined) {
-    release = { artifacts: [], buildId }
-    accumulator.push(release)
-  }
-  release.artifacts.push({
-    artifact: basename,
-    artifactUrl: url.href,
-    buildId,
-    target
-  })
-  return accumulator
-}, [])
+const releases = await getReleases(
+  'https://developer.android.com/topic/generic-system-image/releases',
+  /https:\/\/dl\.google\.com\/developers\/android\/[^\/]+?\/images\/gsi\/aosp_[^-]+?-exp-[^-]+?-[^-]+?-[^-]+?\.zip/,
+  /^(?<target>aosp_.*?)-exp-(?<buildId>.*?)-.*?\.zip$/
+)
 
 console.log(JSON.stringify(releases, null, process.stdout.isTTY ? 2 : 0))

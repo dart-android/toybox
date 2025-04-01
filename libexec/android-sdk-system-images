@@ -1,0 +1,11 @@
+#!/usr/bin/env node
+
+import {getReleases} from '../lib/dl.google.com.js'
+
+const releases = await getReleases(
+  'https://dl.google.com/android/repository/sys-img/android/sys-img2-4.xml',
+  /(?<=<url>)(?!sysimg_mips).*?(?<!-darwin|-windows)\.zip(?=<\/url>)/,
+  /^(?<target>.*)-(?<buildId>\d+_r\d+)(?:-darwin|-linux|-windows)?\.zip$/
+)
+
+console.log(JSON.stringify(releases, null, process.stdout.isTTY ? 2 : 0))

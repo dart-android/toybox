@@ -24,7 +24,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [aosp-android-gsi, aosp-android-latest-release]
+        branch:
+          - aosp-android-gsi
+          - aosp-android-latest-release
 
     outputs:
       aosp-android-gsi-builds: ${{ steps.builds.outputs.aosp-android-gsi-builds }}

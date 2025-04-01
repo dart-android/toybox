@@ -2,7 +2,7 @@ FROM docker.io/library/alpine AS builder
 
 RUN --mount=type=bind,source=build,target=/build \
     mkdir /sysroot \
- && tar -xf /build/$(uname -m).tar.gz -C /sysroot \
+ && tar -xf /build/$(apk --print-arch).tar.gz -C /sysroot \
  && ln -s /system_ext/apex/com.android.runtime /sysroot/apex/com.android.runtime \
  && touch /sysroot/linkerconfig/ld.config.txt
 
