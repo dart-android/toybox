@@ -141,10 +141,10 @@ jobs:
         run: |
           mkdir build
           find . \( -name 'aosp_arm64.tar.gz' -o -name 'aosp_cf_arm64_*.tar.gz' -o -name 'arm64-v8a.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/aarch64.tar.gz
-          find . \( -name 'aosp_arm.tar.gz' -o -name 'aosp_cf_arm_*.tar.gz' -o name 'armeabi-v7a.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/armv7.tar.gz
-          find . \( -name 'aosp_x86_64.tar.gz' -o -name 'aosp_cf_x86_64_*.tar.gz' -o name 'x86_64.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/x86_64.tar.gz
-          find . \( -name 'aosp_x86.tar.gz' -o -name 'aosp_cf_x86_*.tar.gz' -o name 'x86.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/x86.tar.gz
-          find . \( -name 'aosp_riscv64.tar.gz' -o -name 'aosp_cf_riscv64_*.tar.gz' -o name 'riscv64.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/riscv64.tar.gz
+          find . \( -name 'aosp_arm.tar.gz' -o -name 'aosp_cf_arm_*.tar.gz' -o -name 'armeabi-v7a.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/armv7.tar.gz
+          find . \( -name 'aosp_x86_64.tar.gz' -o -name 'aosp_cf_x86_64_*.tar.gz' -o -name 'x86_64.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/x86_64.tar.gz
+          find . \( -name 'aosp_x86.tar.gz' -o -name 'aosp_cf_x86_*.tar.gz' -o -name 'x86.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/x86.tar.gz
+          find . \( -name 'aosp_riscv64.tar.gz' -o -name 'aosp_cf_riscv64_*.tar.gz' -o -name 'riscv64.tar.gz' \) -print0 | xargs -0 -I {} mv {} build/riscv64.tar.gz
           echo "platforms=$(find build -mindepth 1 -maxdepth 1 -print0 | xargs -0 -I {} basename {} .tar.gz | sed -e 's,aarch64,linux/arm64,;s,armv7,/linux/arm/v7,;s,x86_64,linux/amd64,;s,x86,linux/386,;s,riscv64,linux/riscv64,' | paste -s -d , -)" | tee -a "$GITHUB_OUTPUT"
 
       - name: Docker Metadata
