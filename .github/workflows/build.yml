@@ -135,6 +135,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: build-*-${{ matrix.buildId }}
+          merge-multiple: true
 
       - name: Prepare
         id: prepare
