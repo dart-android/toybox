@@ -178,7 +178,7 @@ jobs:
         with:
           context: .
           platforms: ${{ steps.prepare.outputs.platforms }}
-          push: ${{ github.ref_type == 'tag' }}
+          push: ${{ github.ref_type == 'tag' || github.ref_name == matrix.branch }}
           tags: ${{ steps.docker-metadata.outputs.tags }}
           labels: ${{ steps.docker-metadata.outputs.labels }}
 

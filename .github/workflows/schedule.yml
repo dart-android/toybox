@@ -27,10 +27,12 @@ jobs:
         branch:
           - aosp-android-gsi
           - aosp-android-latest-release
+          - edge
 
     outputs:
       aosp-android-gsi-builds: ${{ steps.builds.outputs.aosp-android-gsi-builds }}
       aosp-android-latest-release-builds: ${{ steps.builds.outputs.aosp-android-latest-release-builds }}
+      edge-builds: ${{ steps.builds.outputs.edge-builds }}
 
     steps:
       - name: Checkout
@@ -63,4 +65,14 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       builds: ${{ needs.latest.outputs.aosp-android-latest-release-builds }}
+    secrets: inherit
+
+  edge:
+    needs: [latest]
+    if: needs.latest.outputs.edge-builds != '[]'
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build.yml
+    with:
+      builds: ${{ needs.latest.outputs.edge-builds }}
     secrets: inherit

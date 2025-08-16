@@ -1,0 +1,21 @@
+#!/usr/bin/env node
+
+import {getReleases} from '../lib/dl.google.com.js'
+import {getBuilds} from '../lib/com.android.ci.js'
+
+const releases = await getReleases(
+  'https://developer.android.com/topic/generic-system-image/releases',
+  /https:\/\/dl\.google\.com\/developers\/android\/[^\/]+?\/images\/gsi\/aosp_[^-]+?-exp-[^-]+?-[^-]+?-[^-]+?\.zip/,
+  /^(?<target>aosp_.*?)-exp-(?<buildId>.*?)-.*?\.zip$/
+)
+
+const builds = await getBuilds('aosp-android-latest-release')
+
+console.log(JSON.stringify([{
+  artifacts: [
+    ...releases[0].artifacts,
+    ...builds[0].artifacts.filter(artifact => artifact.target.includes('_riscv64_'))
+  ].map(artifact => ({...artifact, buildId: 'edge'})),
+  branch: 'main',
+  buildId: 'edge'
+}], null, process.stdout.isTTY ? 2 : 0))
