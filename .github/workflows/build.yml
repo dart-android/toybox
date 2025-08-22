@@ -42,6 +42,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Download image
+        run: |
+          curl -fsSLo ${{ matrix.artifact }} "${{ matrix.artifactUrl }}"
+          unzip ${{ matrix.artifact }}
+
       - name: Install dependencies
         if: startsWith(matrix.target, 'aosp_cf_') || !startsWith(matrix.target, 'aosp_')
         run: |
@@ -55,11 +60,6 @@ jobs:
           sudo mkdir /opt/android-cuttlefish
           curl -fsSL "$(libexec/cvd-host_package)" | sudo tar -xzC /opt/android-cuttlefish
           echo /opt/android-cuttlefish/bin | tee -a "$GITHUB_PATH"
-
-      - name: Download Image
-        run: |
-          curl -fsSLo ${{ matrix.artifact }} "${{ matrix.artifactUrl }}"
-          unzip ${{ matrix.artifact }}
 
       - name: Mount system.img
         run: |
