@@ -6,6 +6,6 @@ const arch = process.arch === 'x64' ? 'x86_64' : process.arch
 
 const target = (await (await fetch('https://ci.android.com/builds/branches/aosp-android-latest-release/status.json')).json()).targets.find(target => target.name.startsWith(`aosp_cf_${arch}_`))
 
-const artifact = await getArtifact(target.last_known_good_build, target.name, 'cvd-host_package.tar.gz')
+const artifact = await getArtifact(target.last_known_good_build, target.name, 'otatools.zip')
 
 console.log(artifact.artifactUrl)

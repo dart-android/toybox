@@ -54,12 +54,12 @@ jobs:
           sudo apt-get install -y "linux-modules-extra-$(uname -r)" erofs-utils erofsfuse
           sudo modprobe erofs
 
-      - name: Install cuttlefish
+      - name: Install otatools
         if: startsWith(matrix.target, 'aosp_cf_') || !startsWith(matrix.target, 'aosp_')
         run: |
-          sudo mkdir /opt/android-cuttlefish
-          curl -fsSL "$(libexec/cvd-host_package)" | sudo tar -xzC /opt/android-cuttlefish
-          echo /opt/android-cuttlefish/bin | tee -a "$GITHUB_PATH"
+          curl -fsSLo otatools.zip "$(libexec/otatools)"
+          sudo unzip -d /opt/otatools otatools.zip
+          echo /opt/otatools/bin | tee -a "$GITHUB_PATH"
 
       - name: Mount system.img
         run: |
