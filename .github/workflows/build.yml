@@ -106,7 +106,7 @@ jobs:
           sudo ../libexec/ls-files | sudo tar -cvzf ../${{ matrix.target }}.tar.gz --no-recursion -T-
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: build-${{ matrix.target }}-${{ matrix.buildId }}
           path: ${{ matrix.target }}.tar.gz
