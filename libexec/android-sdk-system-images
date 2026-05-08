@@ -3,7 +3,7 @@
 import {getReleases} from '../lib/dl.google.com.js'
 
 const releases = await getReleases(
-  'https://dl.google.com/android/repository/sys-img/android/sys-img2-4.xml',
+  'https://dl.google.com/android/repository/sys-img/android/sys-img2-5.xml',
   /(?<=<url>)(?!sysimg_).*?(?<!-darwin|-windows)\.zip(?=<\/url>)/,
   /^(?<target>.*)-(?<buildId>\d+_r\d+)(?:-darwin|-linux|-windows)?\.zip$/
 )
