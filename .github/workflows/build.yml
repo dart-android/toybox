@@ -67,11 +67,22 @@ jobs:
           if test -f super.img; then
             simg2img super.img unsparsed.img
             lpunpack unsparsed.img
-            if [ "$(blkid -o value -s TYPE system_a.img)" = "erofs" ]; then
-              sudo erofsfuse -o allow_other system_a.img SYSTEM
-            else
-              sudo mount -o loop,ro system_a.img SYSTEM
+            if test -f system_a.img; then
+              mv system_a.img system.img
             fi
+          elif test -n "$(blkid -o value -s PTTYPE ${{ matrix.target }}/system.img)"; then
+            7z x '-t*' ${{ matrix.target }}/system.img
+            if test -f 1.super.img; then
+              lpunpack 1.super.img
+            elif test -f 0.system.img; then
+              mv 0.system.img system.img
+            fi
+          elif test -n "$(blkid -o value -s TYPE ${{ matrix.target }}/system.img)"; then
+            mv ${{ matrix.target }}/system.img system.img
+          fi
+
+          if [ "$(blkid -o value -s TYPE system.img)" = "erofs" ]; then
+            sudo erofsfuse -o allow_other system.img SYSTEM
           else
             sudo mount -o loop,ro system.img SYSTEM
           fi
@@ -83,7 +94,7 @@ jobs:
             SYSTEM_EXT=SYSTEM/system/system_ext
           fi
 
-          if ! test -d $SYSTEM_EXT/apex/com.android.runtime; then
+          if test -d $SYSTEM_EXT && ! test -d $SYSTEM_EXT/apex/com.android.runtime; then
             unzip SYSTEM/system/apex/com.android.runtime.apex apex_payload.img
 
             sudo mount -t tmpfs tmpfs $SYSTEM_EXT
