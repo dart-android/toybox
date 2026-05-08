@@ -25,11 +25,13 @@ jobs:
       fail-fast: false
       matrix:
         branch:
+          - android-sdk-system-images
           - aosp-android-gsi
           - aosp-android-latest-release
           - edge
 
     outputs:
+      android-sdk-system-images-builds: ${{ steps.builds.outputs.android-sdk-system-images-builds }}
       aosp-android-gsi-builds: ${{ steps.builds.outputs.aosp-android-gsi-builds }}
       aosp-android-latest-release-builds: ${{ steps.builds.outputs.aosp-android-latest-release-builds }}
       edge-builds: ${{ steps.builds.outputs.edge-builds }}
@@ -46,6 +48,16 @@ jobs:
           else
             echo "${{ matrix.branch }}-builds=$(libexec/${{ matrix.branch }})" | tee -a "$GITHUB_OUTPUT"
           fi
+
+  android-sdk-system-images:
+    needs: [latest]
+    if: needs.latest.outputs.android-sdk-system-images-builds != '[]' && false
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build.yml
+    with:
+      builds: ${{ needs.latest.outputs.android-sdk-system-images-builds }}
+    secrets: inherit
 
   aosp-android-gsi:
     needs: [latest]
