@@ -63,7 +63,6 @@ jobs:
 
       - name: Mount system.img
         run: |
-          mkdir SYSTEM
           if test -f super.img; then
             simg2img super.img unsparsed.img
             lpunpack unsparsed.img
@@ -81,6 +80,7 @@ jobs:
             mv ${{ matrix.target }}/system.img system.img
           fi
 
+          mkdir SYSTEM
           if [ "$(blkid -o value -s TYPE system.img)" = "erofs" ]; then
             sudo erofsfuse -o allow_other system.img SYSTEM
           else
