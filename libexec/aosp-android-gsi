@@ -3,7 +3,7 @@
 import {getReleases} from '../lib/dl.google.com.js'
 
 const releases = await getReleases(
-  'https://developer.android.com/topic/generic-system-image/releases',
+  'https://developer.android.com/topic/generic-system-image/releases.md.txt',
   /https:\/\/dl\.google\.com\/developers\/android\/[^\/]+?\/images\/gsi\/aosp_[^-]+?-exp-[^-]+?-[^-]+?-[^-]+?\.zip/,
   /^(?<target>aosp_.*?)-exp-(?<buildId>.*?)-.*?\.zip$/
 )
